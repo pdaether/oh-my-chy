@@ -16,6 +16,7 @@ It stays close to how Omarchy works: bash instead of zsh, Starship for the promp
 - **Prompt**: a Starship prompt showing directory, git branch/status, language versions and command duration — in the current Omarchy theme colors, updating live when I switch themes
 - **Tmux**: mouse support, status bar on top, my resize keys and a yazi popup, added to Omarchy's config without replacing it
 - **SSH agent**: OpenSSH's socket-activated user agent, so key passphrases are asked once and cached for the whole session (terminal, git, VS Code) — Omarchy ships no running agent, it just assumes you'll use 1Password
+- **Idle & lock**: the screensaver kicks in after 15 minutes and the system locks after an hour of inactivity, instead of Omarchy's 2.5/5 minute defaults
 
 ## Getting started
 
@@ -76,6 +77,7 @@ This one took some digging: Omarchy re-renders every `*.tpl` file in `~/.config/
 - **New alias or function** → edit the matching file in `bash/.config/bash/`, open a new terminal. No rerun needed; the files are sourced live
 - **New config file** → create a folder that mirrors its path under `$HOME`, add it to `STOW_PACKAGES` in `install.sh`, rerun
 - **Tweak tmux** → edit `install/tmux-extra.conf`, rerun, then reload tmux
+- **Different idle timings** → change `IDLE_SCREENSAVER_SECONDS` / `IDLE_LOCK_SECONDS` at the top of the idle section in `install.sh`, rerun (seconds)
 
 More details on conventions and testing live in [AGENTS.md](AGENTS.md).
 

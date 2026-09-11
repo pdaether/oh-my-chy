@@ -377,6 +377,39 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# Idle & lock timings in Omarchy's shell.json — screensaver after 15 minutes,
+#     auto-lock after an hour (Omarchy defaults: 150s / 300s). The shell
+#     hot-reloads shell.json, so no restart is needed.
+# ---------------------------------------------------------------------------
+
+IDLE_SCREENSAVER_SECONDS=900 # 15 minutes
+IDLE_LOCK_SECONDS=3600       # 1 hour
+SHELL_JSON_PATH="$HOME/.config/omarchy/shell.json"
+
+if [[ ! -f $SHELL_JSON_PATH ]]; then
+  warn "no ~/.config/omarchy/shell.json — log into Omarchy once, then rerun"
+else
+  idle_already_set=$(jq -r --argjson s "$IDLE_SCREENSAVER_SECONDS" --argjson l "$IDLE_LOCK_SECONDS" \
+    '(.idle.screensaver == $s) and (.idle.lock == $l)' "$SHELL_JSON_PATH" 2>/dev/null)
+  if [[ $idle_already_set == true ]]; then
+    skip "idle timings (15 min screensaver / 1 h lock)"
+  else
+    log "Setting idle timings (15 min screensaver, 1 h lock)"
+    idle_tmp=$(mktemp "$(dirname "$SHELL_JSON_PATH")/.shell.json.XXXXXX")
+    if jq --argjson s "$IDLE_SCREENSAVER_SECONDS" --argjson l "$IDLE_LOCK_SECONDS" \
+      '.idle.screensaver = $s | .idle.lock = $l' "$SHELL_JSON_PATH" >"$idle_tmp" \
+      && jq empty "$idle_tmp" >/dev/null; then
+      chmod --reference="$SHELL_JSON_PATH" "$idle_tmp"
+      mv "$idle_tmp" "$SHELL_JSON_PATH"
+      ok "idle timings set in shell.json"
+    else
+      rm -f "$idle_tmp"
+      warn "could not update shell.json — set idle.screensaver=$IDLE_SCREENSAVER_SECONDS and idle.lock=$IDLE_LOCK_SECONDS manually"
+    fi
+  fi
+fi
+
+# ---------------------------------------------------------------------------
 # Firewall: open KDE Connect ports (1714-1764 tcp+udp) — needed by the
 #     OmaConnect plugin; see install/firewall.sh for why
 # ---------------------------------------------------------------------------
