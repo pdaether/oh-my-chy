@@ -276,9 +276,12 @@ else
   fi
 
   # First-match-wins in ssh_config, so an appended 'Host *' block only fills
-  # the gap when the option is not set anywhere else
-  if grep -qi 'AddKeysToAgent' "$HOME/.ssh/config" 2>/dev/null; then
-    skip "AddKeysToAgent in ~/.ssh/config"
+  # the gap when the option is not set anywhere else. An explicit 'no' earlier
+  # in the file can't be overridden from here — warn instead of silently skip.
+  if grep -Eiq '^[[:space:]]*AddKeysToAgent[[:space:]]+yes([[:space:]]|$)' "$HOME/.ssh/config" 2>/dev/null; then
+    skip "AddKeysToAgent yes in ~/.ssh/config"
+  elif grep -Eiq '^[[:space:]]*AddKeysToAgent' "$HOME/.ssh/config" 2>/dev/null; then
+    warn "~/.ssh/config sets AddKeysToAgent to a non-yes value — ssh won't cache keys in the agent; set it to 'yes' by hand"
   else
     log "Adding AddKeysToAgent to ~/.ssh/config"
     mkdir -p "$HOME/.ssh" && chmod 700 "$HOME/.ssh"
