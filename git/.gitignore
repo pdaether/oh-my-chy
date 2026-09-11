@@ -1,0 +1,25 @@
+# Compiled Python files
+*.pyc
+
+# Folder view configuration files
+.DS_Store
+Desktop.ini
+
+# Thumbnail cache files
+._*
+Thumbs.db
+
+# Files that might appear on external disks
+.Spotlight-V100
+.Trashes
+
+# misc
+*~
+*.bak
+# Editor related files and folders:
+.vscode
+.idea
+
+# Personal temp. stuff that is project related.
+# For that I normally ceate a personal folder inside of the project.
+/patrickd/

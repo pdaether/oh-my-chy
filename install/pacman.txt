@@ -1,0 +1,16 @@
+# Package delta vs. what Omarchy already ships.
+# Omarchy preinstalls: bat eza fd ripgrep fzf jq zoxide starship btop fastfetch
+# nvim tmux lazygit lazydocker docker tldr tree imagemagick ffmpeg wl-clipboard mise
+stow
+7zip
+cloc
+kdeconnect
+nmap
+# PDF tools (pdftotext etc.) — Debian calls this poppler-utils
+poppler
+resvg
+yazi
+# ZCode desktop app — AUR only; the aur: prefix routes to omarchy-pkg-aur-add
+aur:z-code-bin
+# Enpass password manager — AUR only, installs to /opt/enpass
+aur:enpass-bin

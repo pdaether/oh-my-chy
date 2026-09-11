@@ -1,0 +1,9 @@
+# Omarchy shell plugins, one per line:
+#   <git-url> [aur-dependency|-] [section]
+# The optional AUR package is installed first via `omarchy pkg aur add`
+# (some plugin frontends need a binary the plugin itself doesn't ship).
+# The optional section (left|center|right) pins the widget to a bar section;
+# omit it to let Omarchy use its default placement.
+https://github.com/akitaonrails/ai-usagebar.git ai-usagebar-bin
+https://github.com/jitendradara12/omaconnect.git - center
+https://github.com/jankeesvw/omarchy-text-transform.git - right
