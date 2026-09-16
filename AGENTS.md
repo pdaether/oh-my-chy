@@ -1,6 +1,6 @@
 # oh-my-chy
 
-Patrick's personal Omarchy setup: package delta + dotfiles, applied by an idempotent installer (`install.sh`). Replaces the old Ubuntu dotfiles repo.
+My personal Omarchy setup: package delta + dotfiles, applied by an idempotent installer (`install.sh`). 
 
 ## Principles
 

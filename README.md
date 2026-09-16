@@ -83,14 +83,9 @@ This one took some digging: Omarchy re-renders every `*.tpl` file in `~/.config/
 
 - **New app** → add a line to `install/pacman.txt`, rerun `./install.sh`
 - **New plugin** → add `<git-url> [aur-pkg|-] [left|center|right]` to `install/plugins.txt`, rerun `./install.sh`
-- **Another theme from the [awesome-omarchy-themes](https://github.com/AIowa-LLC/awesome-omarchy-themes) collection** → add its folder name to `CURATED_THEMES` in `install.sh`, rerun
 - **New alias or function** → edit the matching file in `bash/.config/bash/`, open a new terminal. No rerun needed; the files are sourced live
 - **New config file** → create a folder that mirrors its path under `$HOME`, add it to `STOW_PACKAGES` in `install.sh`, rerun
 - **Tweak tmux** → edit `install/tmux-extra.conf`, rerun, then reload tmux
 - **Different idle timings** → change `IDLE_SCREENSAVER_SECONDS` / `IDLE_LOCK_SECONDS` at the top of the idle section in `install.sh`, rerun (seconds)
 
 More details on conventions and testing live in [AGENTS.md](AGENTS.md).
-
-## Coming from the old Ubuntu dotfiles?
-
-A few old friends didn't make the trip, on purpose: nala and apt (it's Arch now), nvm (mise does this better), Oh My Zsh (Starship covers the prompt, bash covers the rest), conky (Omarchy's bar and btop), Valet+ (plain pacman PHP now), xclip (wl-copy — we're on Wayland).
