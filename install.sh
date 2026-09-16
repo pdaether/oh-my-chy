@@ -8,7 +8,7 @@
 #     backed up to ~/.local/share/oh-my-chy/backups/<timestamp>/
 #   * marked blocks in .bashrc / tmux.conf are replaced in place, never duplicated
 #
-# Optional skips (env vars): SKIP_PKGS=1  SKIP_VSCODE=1  SKIP_BRAVE=1  SKIP_DEV_ENV=1  SKIP_AGENTS=1  SKIP_PLUGINS=1  SKIP_THEME=1  SKIP_STOW=1  SKIP_SSH_AGENT=1
+# Optional skips (env vars): SKIP_PKGS=1  SKIP_VSCODE=1  SKIP_BRAVE=1  SKIP_VOXTYPE=1  SKIP_DEV_ENV=1  SKIP_AGENTS=1  SKIP_ANDROID_DEV=1  SKIP_LERD=1  SKIP_PLUGINS=1  SKIP_THEME=1  SKIP_STOW=1  SKIP_SSH_AGENT=1
 
 set -euo pipefail
 
@@ -28,6 +28,14 @@ log "oh-my-chy setup starting (repo: $REPO_DIR)"
 
 log "Requesting sudo (kept alive for the run)"
 sudo -v
+# A full run outlasts sudo's default ~5-minute ticket (voxtype/Android/lerd/
+# theme downloads in between), and the firewall step near the end needs sudo
+# again. Refresh the cached ticket in the background; -n never prompts, so if
+# the ticket is lost anyway the loop silently stops and later steps degrade
+# to warns instead of hanging or aborting.
+( while sudo -n -v 2>/dev/null; do sleep 30; done ) &
+SUDO_KEEPALIVE_PID=$!
+trap 'kill "$SUDO_KEEPALIVE_PID" 2>/dev/null || true' EXIT
 
 # ---------------------------------------------------------------------------
 # Packages (delta vs Omarchy's preinstalled set)
@@ -100,6 +108,103 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# Voxtype dictation — starts from Omarchy's Install -> Dictation menu entry
+#     (omarchy-voxtype-install): wtype + voxtype-bin come from pacman.txt, the
+#     default config is seeded only when missing (everything in config.toml
+#     stays personal except the keys pinned below), and the systemd user
+#     service is enabled. Deliberate delta vs the menu: instead of Whisper it
+#     runs NVIDIA's Parakeet TDT 0.6B v3 (int8) on the ONNX (AVX2) build —
+#     Parakeet natively covers German + English among 25 European languages
+#     and its single-pass transducer is an order of magnitude faster than
+#     Whisper medium on this machine (~0.3s per utterance on CPU vs 3-7s on
+#     the iGPU), with punctuation and capitalization built in. voxtype's ONNX
+#     builds have no Vulkan backend, so the GPU would idle anyway. Two quirks
+#     make the explicit ONNX-binary path necessary: the default Whisper build
+#     can neither download Parakeet models nor set parakeet.* config keys,
+#     and switching the root-owned binary variant needs sudo (cached from the
+#     preflight). Hyprland is only reloaded when something changed this run.
+# ---------------------------------------------------------------------------
+
+if [[ ${SKIP_VOXTYPE:-0} == 1 ]]; then
+  skip "Voxtype (SKIP_VOXTYPE=1)"
+elif [[ ! -x /usr/lib/voxtype/voxtype-onnx-avx2 ]]; then
+  warn "voxtype-onnx-avx2 is missing — the pacman.txt step failed? run 'omarchy-pkg-add wtype voxtype-bin' manually"
+else
+  OMARCHY_PATH="${OMARCHY_PATH:-/usr/share/omarchy}"
+  VOX_ONNX=/usr/lib/voxtype/voxtype-onnx-avx2
+  VOXTYPE_PARAKEET_MODEL=parakeet-tdt-0.6b-v3-int8  # ~640MB, de + en
+  VOXTYPE_CHANGED=0
+
+  if [[ -f $HOME/.config/voxtype/config.toml ]]; then
+    skip "voxtype config"
+  elif [[ -f $OMARCHY_PATH/default/voxtype/config.toml ]]; then
+    log "Seeding Omarchy's default voxtype config"
+    mkdir -p "$HOME/.config/voxtype"
+    cp "$OMARCHY_PATH/default/voxtype/config.toml" "$HOME/.config/voxtype/"
+    VOXTYPE_CHANGED=1
+    ok "voxtype config seeded"
+  else
+    warn "no default voxtype config shipped by this Omarchy — configure ~/.config/voxtype manually"
+  fi
+
+  if [[ $(readlink /usr/bin/voxtype 2>/dev/null) == *voxtype-onnx-avx2 ]]; then
+    skip "voxtype ONNX (AVX2) variant"
+  else
+    log "Switching voxtype to the ONNX (AVX2) binary"
+    sudo voxtype setup onnx --enable </dev/null \
+      && { VOXTYPE_CHANGED=1; ok "voxtype ONNX variant"; } \
+      || warn "could not switch variant — run 'sudo voxtype setup onnx --enable' manually"
+  fi
+
+  # Parakeet models are directories (config.json + onnx files), and the
+  # default whisper build rejects the download with "requires the 'parakeet'
+  # feature" — hence the explicit ONNX binary
+  if [[ -f $HOME/.local/share/voxtype/models/$VOXTYPE_PARAKEET_MODEL/config.json ]]; then
+    skip "voxtype model ($VOXTYPE_PARAKEET_MODEL)"
+  else
+    log "Downloading the voxtype $VOXTYPE_PARAKEET_MODEL model (~640MB)"
+    "$VOX_ONNX" setup --download --model "$VOXTYPE_PARAKEET_MODEL" --no-post-install </dev/null \
+      && { VOXTYPE_CHANGED=1; ok "voxtype model ($VOXTYPE_PARAKEET_MODEL)"; } \
+      || warn "model download failed — run 'voxtype setup --download --model $VOXTYPE_PARAKEET_MODEL' manually"
+  fi
+
+  pin_voxtype_key() {
+    local key=$1 value=$2 current
+    current=$("$VOX_ONNX" config get 2>/dev/null | awk -v k="$key" '$1 == k {print $2}' || true)
+    if [[ $current == "$value" ]]; then
+      skip "voxtype $key = $value"
+    else
+      log "Pinning voxtype $key = $value"
+      "$VOX_ONNX" config set "$key" "$value" </dev/null \
+        && { VOXTYPE_CHANGED=1; ok "voxtype $key = $value"; } \
+        || warn "could not set voxtype $key — run 'voxtype config set $key $value' manually"
+    fi
+  }
+  pin_voxtype_key engine parakeet
+  pin_voxtype_key parakeet.model "$VOXTYPE_PARAKEET_MODEL"
+  pin_voxtype_key parakeet.model_type tdt
+
+  if [[ $(systemctl --user is-enabled voxtype.service 2>/dev/null || true) == enabled ]]; then
+    skip "voxtype systemd service"
+  else
+    log "Installing the voxtype systemd user service"
+    voxtype setup systemd </dev/null || true
+    systemctl --user enable --now voxtype.service </dev/null \
+      && { VOXTYPE_CHANGED=1; ok "voxtype.service enabled"; } \
+      || warn "could not enable voxtype.service — run 'voxtype setup systemd' manually"
+  fi
+
+  # The dictation keybindings live in Omarchy's hypr config, guarded by
+  # cmd_present — a reload is all they need once the binary exists. A running
+  # daemon also picks up freshly pinned config values only via restart.
+  if [[ $VOXTYPE_CHANGED == 1 ]]; then
+    systemctl --user is-active -q voxtype.service && systemctl --user restart voxtype.service </dev/null || true
+    hyprctl reload >/dev/null 2>&1 || true
+    omarchy-restart-shell >/dev/null 2>&1 || true
+  fi
+fi
+
+# ---------------------------------------------------------------------------
 # Dev environment (PHP/Laravel + Node + Go + Java via mise) — replaces nvm + valet.sh
 # ---------------------------------------------------------------------------
 
@@ -137,6 +242,35 @@ else
   else
     warn "mise missing — run 'omarchy install dev-env java' manually"
   fi
+fi
+
+# ---------------------------------------------------------------------------
+# Android development toolchain — Google's SDK cmdline-tools in ~/Android/Sdk
+#     (user-owned, no root needed), the API 36 platform, build-tools, the
+#     emulator and one Pixel AVD; see install/android-dev.sh. ANDROID_HOME
+#     and PATH come from the stowed bash exports, and Gradle projects pin
+#     their own JDK via mise (java@latest is too new for the Android build).
+# ---------------------------------------------------------------------------
+
+if [[ ${SKIP_ANDROID_DEV:-0} == 1 ]]; then
+  skip "Android dev toolchain (SKIP_ANDROID_DEV=1)"
+else
+  "$REPO_DIR/install/android-dev.sh"
+fi
+
+# ---------------------------------------------------------------------------
+# Lerd — Podman-powered local PHP dev environment (https://lerd.sh)
+#     Its Arch prerequisites (podman, crun, nss, dnsmasq) come from
+#     pacman.txt; install/lerd.sh installs the binary to ~/.local/bin via the
+#     official installer, runs 'lerd install --dns managed' (https://*.test
+#     with mkcert-trusted certs — lerd's own sudo step, covered by the
+#     preflight), enables linger and starts the stack.
+# ---------------------------------------------------------------------------
+
+if [[ ${SKIP_LERD:-0} == 1 ]]; then
+  skip "Lerd (SKIP_LERD=1)"
+else
+  "$REPO_DIR/install/lerd.sh"
 fi
 
 # ---------------------------------------------------------------------------
@@ -366,11 +500,26 @@ else
         ;;
       *)
         log "Adding plugin from $url"
-        if omarchy plugin add "$url" --enable --yes </dev/null; then
-          # On a fresh install the id isn't resolvable from the plugin list
-          # until now, so re-resolve before pinning the section
-          plugin_id="$(plugin_id_from_url "$url")"
+        if add_output=$(omarchy plugin add "$url" --enable --yes </dev/null 2>&1); then
+          # The id omarchy prints is the truth — it can share no token with
+          # the repo name (lerd-omarchy-glance installs as sh.lerd.glance),
+          # so only fall back to guessing from the URL
+          plugin_id="$(awk '/^(Added|Enabled) /{print $2; exit}' <<<"$add_output")"
+          [[ -z $plugin_id ]] && plugin_id="$(plugin_id_from_url "$url")"
           ensure_section && ok "$plugin_id"
+        elif [[ $add_output == *"is already used"* ]]; then
+          # Re-adding an installed plugin fails, but the error names its real
+          # id — continue from there instead of warning on every rerun
+          plugin_id="$(sed -n "s/.*plugin id '\([^']*\)' is already used.*/\1/p" <<<"$add_output")"
+          case "$(plugin_state "$plugin_id")" in
+            enabled)
+              ensure_section && skip "$plugin_id"
+              ;;
+            disabled)
+              log "Enabling plugin $plugin_id"
+              omarchy plugin enable "$plugin_id" </dev/null && ensure_section && ok "$plugin_id enabled"
+              ;;
+          esac
         else
           warn "plugin install failed for $url — run 'omarchy plugin add $url --enable' manually"
         fi
@@ -418,7 +567,7 @@ fi
 # ---------------------------------------------------------------------------
 
 log "Ensuring firewall allows KDE Connect"
-"$REPO_DIR/install/firewall.sh"
+"$REPO_DIR/install/firewall.sh" || warn "firewall step failed — KDE Connect discovery may be blocked"
 
 # ---------------------------------------------------------------------------
 # GTK file chooser: show hidden files in open/save dialogs

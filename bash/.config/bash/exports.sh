@@ -20,6 +20,10 @@ export HISTCONTROL='ignoreboth'
 # Don't clear the screen after quitting a manual page
 export MANPAGER='less -X'
 
+# Android SDK (installed to the home directory by oh-my-chy, no root involved)
+export ANDROID_HOME="$HOME/Android/Sdk"
+export PATH="$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$ANDROID_HOME/cmdline-tools/latest/bin"
+
 # GPG in the terminal
 [ -t 0 ] && export GPG_TTY="$(tty)"
 

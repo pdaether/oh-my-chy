@@ -1,5 +1,9 @@
 # oh-my-chy
 
+![oh-my-chy](img/oh-my-chy.png)
+
+Opinionated configuration for an opinionated operating system.
+
 My personal setup for [Omarchy](https://omarchy.org). One script that turns a fresh Omarchy install into *my* machine: the apps I need, my shell, my git config, my prompt — and it's safe to run again and again whenever I change something.
 
 It stays close to how Omarchy works: bash instead of zsh, Starship for the prompt (wired into Omarchy's theme system), mise for dev runtimes, and Omarchy's own helpers for installing packages. Nothing gets fought with — only extended.
@@ -9,6 +13,8 @@ It stays close to how Omarchy works: bash instead of zsh, Starship for the promp
 - **Apps**: yazi, cloc, nmap and a few other CLI tools Omarchy doesn't ship, plus VS Code
 - **Browser**: Brave, installed through Omarchy's browser setup and set as the system default
 - **Dev environment**: PHP + Composer + Laravel via Omarchy's dev-env installer, Node.js through mise
+- **Lerd**: [lerd.sh](https://lerd.sh), the Podman-powered local PHP dev environment — projects serve at `https://<name>.test` with trusted certificates (managed DNS), set up with the dependencies its Omarchy guide names (podman, crun, nss) plus a Lerd widget in the bar
+- **Android toolchain**: Google's SDK command-line tools, the Android 16 (API 36) platform, build-tools, the emulator and a Pixel 7 AVD — all in `~/Android/Sdk` as the user, no Android Studio and no root. `adb`, `emulator` and the SDK tools are on PATH; projects pin their own JDK via mise
 - **AI agents**: Codex, Gemini and OpenCode, installed the same way Omarchy's agent picker does it (via mise). OpenCode is the default one — `omarchy-agent` and friends will launch it
 - **Bar plugins**: Omarchy shell plugins like [ai-usagebar](https://github.com/akitaonrails/ai-usagebar) (AI plan usage in the bar), installed and enabled through Omarchy's own plugin system
 - **Theme**: my own [deep-code](https://github.com/pdaether/omarchy-deep-code-theme) and [deep-code-neon](https://github.com/pdaether/omarchy-deep-code-neon-theme) themes plus two curated ones ([hermtang](https://github.com/AIowa-LLC/awesome-omarchy-themes), perfect-computer), all in `~/.config/omarchy/themes/` — deep-code-neon is the active one
@@ -40,6 +46,8 @@ Not every machine needs everything. Any step can be left out:
 SKIP_VSCODE=1 ./install.sh    # leave VS Code alone
 SKIP_BRAVE=1 ./install.sh     # don't install Brave or change the default browser
 SKIP_DEV_ENV=1 ./install.sh   # no PHP/Laravel/Node setup
+SKIP_ANDROID_DEV=1 ./install.sh # no Android SDK/emulator (saves ~6 GB)
+SKIP_LERD=1 ./install.sh      # no Lerd PHP dev environment
 SKIP_AGENTS=1 ./install.sh    # don't touch Codex/Gemini/OpenCode
 SKIP_PLUGINS=1 ./install.sh   # don't install or enable Omarchy plugins
 SKIP_THEME=1 ./install.sh     # don't install or switch any themes
@@ -62,6 +70,8 @@ yazi/       → ~/.config/yazi/theme.toml
 install/pacman.txt       packages to add, one per line
 install/plugins.txt      Omarchy shell plugins (<git-url> [aur-pkg|-] [bar-section])
 install/tmux-extra.conf  tmux settings merged into Omarchy's tmux.conf
+install/android-dev.sh   Android SDK cmdline-tools + emulator + AVD into ~/Android/Sdk
+install/lerd.sh          Lerd PHP dev environment: binary into ~/.local/bin, managed .test DNS, linger, start
 install.sh               the installer, lib/common.sh its helpers
 ```
 

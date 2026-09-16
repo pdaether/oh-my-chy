@@ -14,3 +14,21 @@ yazi
 aur:z-code-bin
 # Enpass password manager — AUR only, installs to /opt/enpass
 aur:enpass-bin
+# Voxtype push-to-talk dictation — wtype simulates the typed output;
+# configured by the Voxtype step in install.sh
+wtype
+# AUR build shipping all binary variants (avx2 / vulkan / onnx)
+aur:voxtype-bin
+# Unpacks the Android cmdline-tools zip in the Android dev step of install.sh
+unzip
+# Lerd (https://lerd.sh) local PHP dev environment — the Arch dependencies its
+# installer checks for: podman (rootless containers), crun (lighter rootless
+# runtime than runc), nss (certutil, so mkcert can trust the CA in Chrome and
+# Firefox) and dnsmasq (only needed when NetworkManager, not systemd-resolved,
+# runs the host DNS). Wired up by the Lerd step / install/lerd.sh.
+podman
+crun
+nss
+dnsmasq
+# Recommended by `lerd doctor`: overlay storage for rootless podman
+fuse-overlayfs

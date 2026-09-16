@@ -7,3 +7,5 @@
 https://github.com/akitaonrails/ai-usagebar.git ai-usagebar-bin
 https://github.com/jitendradara12/omaconnect.git - center
 https://github.com/jankeesvw/omarchy-text-transform.git - right
+# Lerd status widget, the optional bar plugin from lerd.sh/getting-started/omarchy
+https://github.com/lerd-env/lerd-omarchy-glance.git -

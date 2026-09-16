@@ -27,6 +27,6 @@ for proto in tcp udp; do
     log "Opening ufw ${PORT_RANGE}/${proto}"
     sudo -n ufw allow "${PORT_RANGE}/${proto}" comment 'KDE Connect' </dev/null \
       && ok "ufw ${PORT_RANGE}/${proto}" \
-      || die "could not add ufw rule ${PORT_RANGE}/${proto}"
+      || warn "could not add ufw rule ${PORT_RANGE}/${proto} (no cached sudo?) — run: sudo ufw allow ${PORT_RANGE}/${proto}"
   fi
 done
