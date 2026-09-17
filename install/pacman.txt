@@ -4,6 +4,7 @@
 stow
 7zip
 cloc
+dbeaver
 kdeconnect
 nmap
 # PDF tools (pdftotext etc.) — Debian calls this poppler-utils
