@@ -44,16 +44,21 @@ backup_path() {
 
 # Idempotently ensure a marked block exists in a file. If the markers are
 # found, the old block is replaced; otherwise the block is appended.
+# The third argument is the comment prefix (`#` by default, `--` for Lua).
 upsert_block() {
-  local file=$1 block=$2
-  local begin='# >>> oh-my-chy >>>'
-  local end='# <<< oh-my-chy <<<'
+  local file=$1 block=$2 prefix=${3:-#}
+  local begin="$prefix >>> oh-my-chy >>>"
+  local end="$prefix <<< oh-my-chy <<<"
 
   [[ -f $file ]] || touch "$file"
 
-  # Remove any existing block, then append the fresh one
-  if grep -qF "$begin" "$file"; then
+  # Remove any existing block, then append the fresh one. -e matters for
+  # prefixes like `--`, which grep would otherwise read as an option.
+  if grep -qF -e "$begin" "$file"; then
     sed -i "/^$begin$/,/^$end$/d" "$file"
+    # Drop blank lines the deletion left at the end, so reruns don't grow
+    # the file and the content stays byte-identical across runs.
+    printf '%s\n' "$(cat "$file")" >"$file"
   fi
   printf '\n%s\n%s\n%s\n' "$begin" "$block" "$end" >>"$file"
 }

@@ -301,6 +301,22 @@ else
   fi
 fi
 
+if ! command -v npx &>/dev/null; then
+  warn "npx missing — install Node.js and rerun to install AI skills"
+else
+  log "Installing AI skills globally for all supported agents"
+  while read -r skill_source skill_name skill_extra || [[ -n $skill_source ]]; do
+    [[ -z $skill_source || $skill_source == \#* ]] && continue
+    if [[ -z $skill_name || -n $skill_extra ]]; then
+      warn "Invalid skills entry: expected <source> <skill-name> — $skill_source"
+      continue
+    fi
+    npx --yes skills add "$skill_source" --skill "$skill_name" --global --agent '*' --yes </dev/null \
+      && ok "AI skill: $skill_name" \
+      || warn "AI skill install failed: $skill_name ($skill_source) — rerun to retry"
+  done <"$REPO_DIR/install/skills.txt"
+fi
+
 # ---------------------------------------------------------------------------
 # Dotfiles via GNU Stow (one package per concern)
 # ---------------------------------------------------------------------------
@@ -373,6 +389,20 @@ fi
 log "Applying extra tmux settings (marked block)"
 upsert_block "$HOME/.config/tmux/tmux.conf" "$(cat "$REPO_DIR/install/tmux-extra.conf")"
 ok "tmux config updated"
+
+# ---------------------------------------------------------------------------
+# Hyprland keybinding: X compose post (CTRL+SHIFT+X)
+# ---------------------------------------------------------------------------
+
+log "Applying extra Hyprland keybindings (marked block)"
+mkdir -p "$HOME/.config/hypr"
+BINDINGS_MD5_BEFORE=$(md5sum "$HOME/.config/hypr/bindings.lua" 2>/dev/null | cut -d' ' -f1)
+upsert_block "$HOME/.config/hypr/bindings.lua" "$(cat "$REPO_DIR/install/hypr-extra.lua")" "--"
+BINDINGS_MD5_AFTER=$(md5sum "$HOME/.config/hypr/bindings.lua" | cut -d' ' -f1)
+ok "Hyprland bindings updated"
+if [[ $BINDINGS_MD5_BEFORE != "$BINDINGS_MD5_AFTER" ]]; then
+  hyprctl reload >/dev/null 2>&1 || true
+fi
 
 # ---------------------------------------------------------------------------
 # SSH agent: OpenSSH's socket-activated user unit (omacom/omarchy#1661)
