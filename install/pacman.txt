@@ -5,6 +5,9 @@ stow
 7zip
 cloc
 dbeaver
+# DB client libs (psql + mysql/mariadb CLI tools, also used by DBeaver/Laravel)
+postgresql-libs
+mariadb-clients
 kdeconnect
 nmap
 # PDF tools (pdftotext etc.) — Debian calls this poppler-utils
